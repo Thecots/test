@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="c-compare" style="--value:50%;">
+        <canvas id="canvas1" class="c-compare__left"></canvas>
+        <canvas id="canvas2" class="c-compare__right"></canvas>
+        <input type="range" class="c-rng c-compare__range" min="0" max="100" value="50" oninput="this.parentNode.style.setProperty('--value', `${this.value}%`)" />
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let visibleRatio = 0.5; // Variable que controla el porcentaje visible de cada skybox (0 a 1)
+
+        // Escenas para cada skybox
+        const scene1 = new THREE.Scene();
+        const scene2 = new THREE.Scene();
+
+        // Renderers para cada canvas
+        const canvas1 = document.getElementById('canvas1');
+        const canvas2 = document.getElementById('canvas2');
+        const renderer1 = new THREE.WebGLRenderer({ canvas: canvas1 });
+        const renderer2 = new THREE.WebGLRenderer({ canvas: canvas2 });
+
+        // Ajuste inicial del tamaño de los renders
+        renderer1.setSize(window.innerWidth * visibleRatio, window.innerHeight);
+        renderer2.setSize(window.innerWidth * (1 - visibleRatio), window.innerHeight);
+
+        // Cámaras
+        const camera1 = new THREE.PerspectiveCamera(75, visibleRatio, 0.1, 1000);
+        const camera2 = new THREE.PerspectiveCamera(75, 1 - visibleRatio, 0.1, 1000);
+        camera1.position.set(0, 0, 0);
+        camera2.position.set(0, 0, 0);
+
+        // Cargar texturas 360
+        const textureLoader = new THREE.TextureLoader();
+        const texture1 = textureLoader.load('./BFS_DDKM2_HIGH_DAY_F05MIMI.png'); // Primera imagen
+        const texture2 = textureLoader.load('./BFS_LibB_HIGH_NIGHT_F05MIMI.png'); // Segunda imagen
+
+        // Crear geometrías de las esferas invertidas
+        const geometry = new THREE.SphereGeometry(500, 60, 40);
+        const material1 = new THREE.MeshBasicMaterial({ map: texture1, side: THREE.BackSide });
+        const material2 = new THREE.MeshBasicMaterial({ map: texture2, side: THREE.BackSide });
+
+        const sphere1 = new THREE.Mesh(geometry, material1); // Primer skybox
+        const sphere2 = new THREE.Mesh(geometry, material2); // Segundo skybox
+        scene1.add(sphere1);
+        scene2.add(sphere2);
+
+        // Control de movimiento de la cámara con el ratón
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        window.addEventListener('mousedown', function(e) {
+            isDragging = true;
+        });
+
+        window.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                const deltaMove = {
+                    x: e.offsetX - previousMousePosition.x,
+                    y: e.offsetY - previousMousePosition.y
+                };
+
+                const rotationSpeed = 0.005;
+                sphere1.rotation.y += deltaMove.x * rotationSpeed;
+                sphere2.rotation.y += deltaMove.x * rotationSpeed;
+
+                sphere1.rotation.x += deltaMove.y * rotationSpeed;
+                sphere2.rotation.x += deltaMove.y * rotationSpeed;
+            }
+
+            previousMousePosition = { x: e.offsetX, y: e.offsetY };
+        });
+
+        window.addEventListener('mouseup', function() {
+            isDragging = false;
+        });
+
+        // Animación para renderizar ambos canvases
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Renderizar el primer skybox en el primer canvas
+            renderer1.render(scene1, camera1);
+
+            // Renderizar el segundo skybox en el segundo canvas
+            renderer2.render(scene2, camera2);
+        }
+
+        animate();
+
+        // Ajustar tamaño de los canvases al redimensionar la ventana
+        window.addEventListener('resize', () => {
+            renderer1.setSize(window.innerWidth * visibleRatio, window.innerHeight);
+            renderer2.setSize(window.innerWidth * (1 - visibleRatio), window.innerHeight);
+
+            camera1.aspect = visibleRatio;
+            camera1.updateProjectionMatrix();
+            camera2.aspect = 1 - visibleRatio;
+            camera2.updateProjectionMatrix();
+        });
+
+        // Controlar el porcentaje visible entre los dos canvases
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                visibleRatio = Math.max(0, visibleRatio - 0.1); // Disminuir el tamaño del primer canvas
+            } else if (e.key === 'ArrowRight') {
+                visibleRatio = Math.min(1, visibleRatio + 0.1); // Aumentar el tamaño del primer canvas
+            }
+
+            // Ajustar el tamaño de los renders y sus cámaras en base a visibleRatio
+            renderer1.setSize(window.innerWidth * visibleRatio, window.innerHeight);
+            renderer2.setSize(window.innerWidth * (1 - visibleRatio), window.innerHeight);
+
+            camera1.aspect = visibleRatio;
+            camera1.updateProjectionMatrix();
+            camera2.aspect = 1 - visibleRatio;
+            camera2.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
